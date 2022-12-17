@@ -1,41 +1,30 @@
-require("dotenv").config()
 const express = require('express')
+const cors = require('cors');
 const app = express()
-const path = require('path')
-
 const { bots, playerRecord } = require('./data')
 const { shuffleArray } = require('./utils')
-const Rollbar = require('rollbar');
-const cors = require("cors")
 
 app.use(express.json())
 app.use(express.static('public'))
 app.use(cors());
 
+// include and initialize the rollbar library with your access token
+var Rollbar = require('rollbar')
 var rollbar = new Rollbar({
-    accessToken: process.env.ROLLBAR_TOKEN,
+    accessToken: '72de69086a6241399b97869d48d9f365',
     captureUncaught: true,
     captureUnhandledRejections: true,
-    payload: {
-        code_version: '1.0.0',
-    }
-});
-
-
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/index.html'))
 })
+
+// record a generic message and send it to Rollbar
+rollbar.log('Hello world!')
 
 app.get('/api/robots', (req, res) => {
     try {
-        // rollbar events
-        rollbar.log("retrived all bots")
-        res.status(200).send(bots)
+        res.status(200).send(botsArr)
     } catch (error) {
+        rollbar.error(`ERROR GETTING BOTS`);
         console.log('ERROR GETTING BOTS', error)
-        // rollbar events
-        rollbar.error(error)
         res.sendStatus(400)
     }
 })
@@ -45,12 +34,11 @@ app.get('/api/robots/five', (req, res) => {
         let shuffled = shuffleArray(bots)
         let choices = shuffled.slice(0, 5)
         let compDuo = shuffled.slice(6, 8)
-        rollbar.info(" returned our choise and ocmputer choise", choices)
+        rollbar.info(`SUCCESSFULLY RETRIEVED FIVE BOTS`);
         res.status(200).send({ choices, compDuo })
     } catch (error) {
+        rollbar.error(`ERROR GETTING FIVE BOTS`);
         console.log('ERROR GETTING FIVE BOTS', error)
-        // rollbar events
-        rollbar.error(error)
         res.sendStatus(400)
     }
 })
@@ -75,30 +63,27 @@ app.post('/api/duel', (req, res) => {
         // comparing the total health to determine a winner
         if (compHealthAfterAttack > playerHealthAfterAttack) {
             playerRecord.losses++
+            rollbar.info(`USER LOST`);
             res.status(200).send('You lost!')
-            rollbar.warning("you lost")
-
         } else {
             playerRecord.losses++
+            rollbar.info(`USER WON`);
             res.status(200).send('You won!')
         }
     } catch (error) {
-        rollbar.error(error)
-
+        rollbar.error(`ERROR OCCURED DURING DUEL`);
         console.log('ERROR DUELING', error)
-        // rollbar events
-        rollbar.error(error)
         res.sendStatus(400)
     }
 })
 
 app.get('/api/player', (req, res) => {
     try {
+        rollbar.info(`PLAYER STATS SUCCESSFULLY RETRIEVED`);
         res.status(200).send(playerRecord)
     } catch (error) {
+        rollbar.critical(`ERROR GETTING PLAYER STATS`);
         console.log('ERROR GETTING PLAYER STATS', error)
-        // rollbar events
-        rollbar.error(error)
         res.sendStatus(400)
     }
 })
