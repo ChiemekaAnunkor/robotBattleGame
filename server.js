@@ -1,16 +1,20 @@
+require("dotenv").config()
 const express = require('express')
 const app = express()
+const path = require('path')
+
 const { bots, playerRecord } = require('./data')
 const { shuffleArray } = require('./utils')
 const Rollbar = require('rollbar');
-require("dotenv").config()
-var cors = require('cors')
-app.use(cors())
+const cors = require("cors")
 
 app.use(express.json())
-app.use(express.static("public"))
-app.get("/", (req, res) => {
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/index.html'))
 })
+
 var rollbar = new Rollbar({
     accessToken: process.env.ROLLBAR_TOKEN,
     captureUncaught: true,
